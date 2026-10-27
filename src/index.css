@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; color: #f3ece3; font: 15px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; background: radial-gradient(900px 500px at 80% -10%, #3a2415 0, transparent 60%) #171311; min-height: 100vh; }
+:focus-visible { outline: 2px solid #e0813f; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@layer components {
+  .eyebrow { @apply text-xs uppercase tracking-widest text-ember; }
+  .btn { @apply inline-flex items-center justify-center rounded-lg bg-ember px-4 py-2 font-semibold text-ink transition hover:brightness-110 active:scale-95 disabled:opacity-50; }
+  .card { @apply rounded-card bg-[#f3ece1] p-5 text-bark; }
+  .card-dark { @apply rounded-card border border-line bg-panel p-5 text-[#f3ece3]; }
+  .btn-quiet { @apply inline-flex items-center justify-center rounded-lg border border-line px-4 py-2 text-sm font-semibold text-[#f3ece3] transition hover:border-ember; }
+}
+
+[data-reduce-motion="true"] *, [data-reduce-motion="true"] *::before, [data-reduce-motion="true"] *::after { animation: none !important; transition: none !important; }
+/* Graph nodes are focusable SVG groups: make the keyboard focus ring explicit and visible on every browser. */
+svg g[role="button"]:focus-visible { outline: 2px solid #e0813f; outline-offset: 4px; }

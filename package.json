@@ -1,0 +1,38 @@
+{
+  "name": "careergraph",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=20.11" },
+  "scripts": {
+    "dev": "vite",
+    "dev:api": "npm --prefix server run dev",
+    "start:api": "npm --prefix server run start:prod",
+    "db:check": "npm --prefix server run db:check",
+    "db:check:prod": "npm --prefix server run db:check:prod",
+    "db:migrate:prod": "npm --prefix server run db:migrate:prod",
+    "test:pg": "npm --prefix server run test:pg",
+    "dev:all": "tsx scripts/dev-all.ts",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "tsx --test tests/studentJourney.test.ts tests/careerModelWorkflow.test.ts tests/careerIntelligence.test.ts tests/readiness.test.ts tests/actions.test.ts tests/compare.test.ts tests/scoped.test.ts tests/assistant.test.ts tests/settings.test.ts tests/semantics.test.ts tests/authApi.test.ts tests/coreApi.test.ts tests/integration.test.ts tests/diagnostics.test.ts tests/journey.test.ts tests/guards.test.ts tests/customCareers.test.ts tests/devAll.test.ts tests/persistence.test.ts tests/careerDraft.test.ts tests/skillStatus.test.ts tests/graphLayout.test.ts tests/csp.test.ts tests/aiAssistant.test.ts tests/explain.test.ts tests/evidenceLink.test.ts tests/graphModel.test.ts tests/stage9.test.ts tests/integrationSprint.test.ts tests/auditFixes.test.ts",
+    "csp": "tsx scripts/csp.ts"
+  },
+  "dependencies": {
+    "lucide-react": "^0.383.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}

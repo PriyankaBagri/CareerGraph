@@ -1,0 +1,30 @@
+node_modules
+dist
+.env
+.env.local
+.env.*.local
+.test-out
+.vite
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# environment files (keep the *.example templates)
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+# logs, coverage, database dumps and backups
+npm-debug.log*
+yarn-debug.log*
+coverage
+*.dump
+*.pgdump
+*.backup
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+dumps/
+backups/
