@@ -3,6 +3,7 @@ import { suggestedPrompts } from '../utils/assistant';
 import { LocalRulesAssistantProvider } from './assistant/localProvider';
 import type { CareerAssistantProvider } from './assistant/provider';
 export { aiClient, friendlyAiError } from './assistant/aiClient';
+export type { PlanActionDetail, PlanReply, PlanWeek } from './assistant/aiClient';
 
 // The single place that picks a provider. To go real, return a BackendAssistantProvider here.
 const provider: CareerAssistantProvider = new LocalRulesAssistantProvider();

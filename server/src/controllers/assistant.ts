@@ -27,3 +27,12 @@ export const assistantChat: Handler = async (req, ctx) => {
   if (turns[turns.length - 1].role !== 'user') throw new ValidationError({ messages: 'The last message must be from the user.' });
   return { status: 200, body: await ctx.services.assistant.chat(req.userId as string, { careerId: careerId as string | undefined, messages: turns, page: page as string | undefined, skillId: skillId as string | undefined }) };
 };
+
+// Unlike chat, careerId is required here: a weekly plan is always for one specific career the user picked, never inferred from their profile.
+export const assistantPlan: Handler = async (req, ctx) => {
+  const b = req.body;
+  if (typeof b !== 'object' || b === null || Array.isArray(b)) throw new ValidationError({ body: 'Send a JSON object.' });
+  const { careerId } = b as { careerId?: unknown };
+  if (typeof careerId !== 'string' || !ID.test(careerId)) throw new ValidationError({ careerId: 'A valid career id is required.' });
+  return { status: 200, body: await ctx.services.assistant.generatePlan(req.userId as string, careerId) };
+};

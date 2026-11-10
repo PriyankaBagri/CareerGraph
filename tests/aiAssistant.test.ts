@@ -51,7 +51,10 @@ describe('AI client against the real backend pipeline (model is a test double)',
       return new Response(JSON.stringify(r.body), { status: r.status, headers: { 'content-type': 'application/json', ...(r.headers['Retry-After'] ? { 'Retry-After': r.headers['Retry-After'] } : {}) } });
     }) as typeof fetch;
   };
-  const signIn = async (email = 'a@x.com') => { const r = await backend.call('POST', '/api/auth/register', { body: { name: 'Ada', email, password: 'Passw0rdOK1' } }); api.setToken(r.body.token as string, false); };
+  const signIn = async (email = 'a@x.com') => { const r = await backend.call('POST', '/api/auth/register', { body: { name: 'Ada', email, password: 'Passw0rdOK1' } }); api.setToken(r.body.token as string, false); return r.body.token as string; };
+  const token = () => (localStorage.getItem('careergraph:token') ?? sessionStorage.getItem('careergraph:token')) as string;
+  const CAREER_BODY = { name: 'Corporate Lawyer', category: 'Law', description: '', evidenceExpectations: [], capabilities: [{ name: 'C', description: '', skills: [{ name: 'Legal research', requiredLevel: 3, importance: 3 }, { name: 'Contract drafting', requiredLevel: 4, importance: 5 }] }] };
+  const createCareer = async (t = token()) => ((await (await fetch('http://api.test/api/careers', { method: 'POST', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify(CAREER_BODY) })).json()) as { career: { id: string } }).career.id;
   beforeEach(() => { resetStorage(); seen = []; real = globalThis.fetch; ai = new FakeAi(); api.setBase('http://api.test/api'); });
   afterEach(() => { globalThis.fetch = real; api.setToken(null); api.setBase(''); });
 
@@ -100,6 +103,7 @@ describe('AI client against the real backend pipeline (model is a test double)',
     assert.match(e(429, 'rate_limited'), /quickly/); assert.match(e(504, 'ai_timeout'), /too long/); assert.match(e(502, 'ai_unavailable'), /could not answer/); assert.match(e(503, 'ai_busy'), /busy right now.*try again later/);
     assert.match(e(503, 'ai_not_configured'), /not configured/); assert.match(e(0, 'network_error'), /reach the server/); assert.match(e(401, 'token_expired'), /sign in/);
     assert.match(e(404, 'career_not_found'), /isn't available/); assert.match(friendlyAiError(new Error('x')), /try again/);
+    assert.match(e(502, 'ai_invalid_output'), /could not be used/); assert.match(e(400, 'no_actions_available'), /no open actions/);
     for (const [s, c] of [[429, 'rate_limited'], [500, 'x'], [400, 'validation_failed']] as const) assert.ok(!/SECRET|RAW/.test(e(s, c)));
   });
   it('rate limiting surfaces as a clear error and no fallback answer is produced', async () => {
@@ -112,11 +116,45 @@ describe('AI client against the real backend pipeline (model is a test double)',
     boot(ai); await signIn(); ai.reply = new AiProviderError('upstream_error', 500);
     await assert.rejects(aiClient.chat([{ role: 'user', content: 'hi' }]), (e: unknown) => e instanceof ApiError && e.status === 502);
   });
+
+  // plan() — real ids from the real backend (never invented by the test), joined client-side against the real `actions` list.
+  const actionIds = async (careerId: string) => ((await (await fetch(`http://api.test/api/careers/${careerId}/actions`, { headers: { Authorization: `Bearer ${token()}` } })).json()) as { actions: { id: string }[] }).actions.map((a) => a.id);
+  const validReply = (ids: string[]) => JSON.stringify({ weeks: [{ week: 1, focus: 'Build the foundation', actionIds: [ids[0]], rationale: 'Highest-priority gap right now.' }] });
+
+  it('plan() resolves an AI-generated plan into real action details, correctly labelled as AI-generated', async () => {
+    boot(ai); await signIn(); const careerId = await createCareer(); const ids = await actionIds(careerId);
+    ai.reply = validReply(ids);
+    const r = await aiClient.plan(careerId);
+    assert.equal(r.source, 'ai'); assert.equal(r.unverified, true); assert.ok(r.provider);
+    assert.equal(r.weeks.length, 1); assert.equal(r.weeks[0].actions.length, 1);
+    assert.equal(r.weeks[0].actions[0].id, ids[0]); assert.ok(r.weeks[0].actions[0].skillName);
+  });
+
+  it('plan() falls back to a rule-based plan, truthfully labelled, when no AI is configured', async () => {
+    boot(null); await signIn(); const careerId = await createCareer(); const ids = await actionIds(careerId);
+    const r = await aiClient.plan(careerId);
+    assert.equal(r.source, 'rule_based'); assert.equal(r.unverified, false); assert.equal(r.provider, null);
+    assert.match(r.notice, /not AI-generated/);
+    assert.deepEqual(r.weeks.flatMap((w) => w.actions.map((a) => a.id)), ids); // every id real, none invented
+  });
+
+  it('plan() surfaces malformed AI output as a real error, never a fake plan', async () => {
+    boot(ai); await signIn(); const careerId = await createCareer();
+    ai.reply = 'not json at all';
+    await assert.rejects(aiClient.plan(careerId), (e: unknown) => e instanceof ApiError && e.status === 502 && e.code === 'ai_invalid_output');
+  });
+
+  it("plan() refuses another user's career id (404) and never calls the model", async () => {
+    boot(ai); await signIn('a@x.com'); const careerId = await createCareer();
+    await signIn('b@x.com');
+    await assert.rejects(aiClient.plan(careerId), (e: unknown) => e instanceof ApiError && e.status === 404 && e.code === 'career_not_found');
+    assert.equal(ai.calls.length, 0);
+  });
 });
 
 describe('browser code never holds a model credential or calls a vendor', () => {
   it('has no vendor URL, key header or key variable in any frontend source', () => {
-    for (const f of ['src/services/assistant/aiClient.ts', 'src/services/assistant.ts', 'src/pages/Assistant.tsx', 'src/utils/aiHistory.ts', 'src/services/api.ts', 'vite.config.ts']) {
+    for (const f of ['src/services/assistant/aiClient.ts', 'src/services/assistant.ts', 'src/pages/Assistant.tsx', 'src/components/ai/WeeklyPlan.tsx', 'src/utils/aiHistory.ts', 'src/services/api.ts', 'vite.config.ts']) {
       const src = readFileSync(f, 'utf8');
       assert.ok(!/api\.anthropic\.com|api\.openai\.com|x-api-key|AI_API_KEY|VITE_AI|apiKey/i.test(src), f);
     }
@@ -127,5 +165,13 @@ describe('browser code never holds a model credential or calls a vendor', () => 
     const send = src.slice(src.indexOf('async function send'), src.indexOf('const submit'));
     assert.ok(/if \(mode\.kind === 'ai'\)[\s\S]*?\} else \{[\s\S]*?assistantService\.ask/.test(send), 'rules only in the non-AI branch');
     assert.ok(!/catch[\s\S]*assistantService\.ask/.test(send), 'catch must not call the rules engine');
+  });
+  it('the weekly plan never turns a failed build into a fake "ready" plan, and labels source truthfully', () => {
+    const src = readFileSync('src/components/ai/WeeklyPlan.tsx', 'utf8');
+    assert.match(src, /AI-generated plan/); assert.match(src, /Rule-based starter plan/);
+    const build = src.slice(src.indexOf('async function build'), src.indexOf('return ('));
+    const tryCatch = build.slice(build.indexOf('try {'));
+    assert.ok(!/catch[\s\S]*kind: 'ready'/.test(tryCatch), "catch must not set state to 'ready'");
+    assert.match(tryCatch, /catch[\s\S]*kind: 'empty'[\s\S]*kind: 'error'/, 'a failure is either the explicit empty state or an error, never silently dropped');
   });
 });

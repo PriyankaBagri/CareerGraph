@@ -27,7 +27,7 @@ export default function Roadmap() {
     <div className="animate-rise space-y-8">
       <header className="space-y-4">
         <div><p className="eyebrow">Roadmap</p><h1 className="text-3xl font-semibold">{view.career.name}</h1>
-          <p className="max-w-2xl text-mute">Readiness is how well your skills and evidence match this career. Plan progress is how much of this roadmap you have done. They are separate.</p></div>
+          <p className="max-w-2xl text-mute">Readiness is how well you match this career. Progress is how much of this plan you've done.</p></div>
         <div className="grid grid-cols-3 gap-3 sm:max-w-xl">
           {stat('Readiness', readinessLabel(view.readiness))}{stat('Plan progress', `${roadmap.progress}%`)}{stat('Done', `${sum.completed} of ${actions.length}`)}
         </div>

@@ -46,7 +46,7 @@ describe('navigation: every sidebar destination has its own route and page', () 
   const shell = readFileSync(new URL('../src/components/layout/AppShell.tsx', import.meta.url), 'utf8'), app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   const nav = [...shell.matchAll(/\{ to: '([^']+)', label: '([^']+)'/g)].map((m) => m[1]);
   const routes = new Map([...app.matchAll(/<Route path="([^"]+)" element=\{<(\w+)/g)].map((m) => [m[1], m[2]]));
-  it('has nine destinations, each a defined route', () => { assert.equal(nav.length, 9); for (const to of nav) assert.ok(routes.has(to), to); });
+  it('has nine destinations (Compare and Bookings are reached from Explorer and Mentorship), each a defined route', () => { assert.equal(nav.length, 9); for (const extra of ['/compare', '/bookings']) assert.ok(routes.has(extra), `${extra} keeps its route`); for (const to of nav) assert.ok(routes.has(to), to); });
   it('no two sidebar items open the same page, and none opens the dashboard by accident', () => {
     const pages = nav.map((to) => routes.get(to)); assert.equal(new Set(pages).size, nav.length);
     for (const to of nav.filter((t) => t !== '/dashboard')) assert.notEqual(routes.get(to), 'Dashboard', to);

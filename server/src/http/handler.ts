@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { AppError, badRequest, methodNotAllowed, notFound, payloadTooLarge, unauthorized } from '../errors';
+import { AppError, badRequest, databaseNotMigrated, methodNotAllowed, notFound, payloadTooLarge, unauthorized } from '../errors';
 import type { AppContext, HttpResponse, RawRequest, Route } from './types';
 
 const METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
@@ -31,7 +31,9 @@ export function bodyParserError(err: unknown): AppError | null {
 export function respondToError(err: unknown, ctx: AppContext, headers: Record<string, string | undefined>): HttpResponse {
   const requestId = requestIdFrom(headers['x-request-id']);
   const base = baseHeaders(ctx, headers.origin, requestId);
-  const known = bodyParserError(err) ?? (err instanceof AppError && err.expose ? err : null);
+  const missingTable = typeof err === 'object' && err !== null && (err as { code?: unknown }).code === '42P01';
+  if (missingTable) ctx.logger.error('Database table is missing: run "npm run db:migrate"', { requestId, message: err instanceof Error ? err.message : String(err) });
+  const known = bodyParserError(err) ?? (missingTable ? databaseNotMigrated() : err instanceof AppError && err.expose ? err : null);
   if (known) {
     const extra: Record<string, string> = known.status === 405 && known.details ? { Allow: (known.details as { allow: string[] }).allow.join(', ') } : known.status === 401 ? { 'WWW-Authenticate': 'Bearer' } : known.status === 429 && known.details ? { 'Retry-After': String((known.details as { retryAfterSeconds: number }).retryAfterSeconds) } : {};
     const fields = known.code === 'validation_failed' ? { fields: known.details } : {};

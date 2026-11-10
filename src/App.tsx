@@ -11,6 +11,10 @@ import Dashboard from './pages/Dashboard';
 import EvidencePage from './pages/Evidence';
 import ForgotPassword from './pages/ForgotPassword';
 import Landing from './pages/Landing';
+import Bookings from './pages/Bookings';
+import MentorDetail from './pages/MentorDetail';
+import Mentors from './pages/Mentors';
+import { PaymentCancel, PaymentReturn } from './pages/PaymentResult';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import SkillDetail from './pages/SkillDetail';
@@ -44,6 +48,11 @@ export default function App() {
           <Route path="/compare" element={<Compare />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/assistant" element={<Assistant />} />
+          <Route path="/mentors" element={<Mentors />} />
+          <Route path="/mentors/:id" element={<MentorDetail />} />
+          <Route path="/bookings" element={<Bookings />} />
+          <Route path="/bookings/payment/return" element={<PaymentReturn />} />
+          <Route path="/bookings/payment/cancel" element={<PaymentCancel />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

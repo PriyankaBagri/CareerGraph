@@ -3,12 +3,16 @@ import { after, before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { CAREER_DATASETS } from '../src/domain/shared';
 import { readMigrations, runMigrations } from '../src/db/migrations';
+import { DEMO_MENTORS } from '../src/domain/demoMentors';
+import { runMentorshipSeed } from '../src/db/seedMentorship';
 import { runSeed } from '../src/db/seeding';
 import type { Db } from '../src/db/types';
 import { createHandler } from '../src/http/handler';
 import { routes } from '../src/routes';
 import { checkDatabase } from '../src/routes/health';
 import { createPgCoreRepos } from '../src/repositories/pg-core';
+import { createPgMentorshipRepos } from '../src/repositories/pg-mentorship';
+import { createPgPaymentRepos } from '../src/repositories/pg-payments';
 import { createPgProgressRepos } from '../src/repositories/pg-progress';
 import { createPgRepos } from '../src/repositories/pg';
 import { createServices } from '../src/services';
@@ -22,7 +26,7 @@ const LAW = { name: `Corporate Lawyer ${TAG}`, category: 'Law', description: 'd'
 
 export function registerPgSuite(db: Db, label: string): void {
   const config = testConfig(); const now = () => new Date();
-  const services = createServices({ repos: { ...createPgRepos(db), ...createPgCoreRepos(db), ...createPgProgressRepos(db) }, config, now });
+  const services = createServices({ repos: { ...createPgRepos(db), ...createPgCoreRepos(db), ...createPgProgressRepos(db), ...createPgMentorshipRepos(db), ...createPgPaymentRepos(db) }, config, now });
   const handler = createHandler(routes, { config, db, logger: silentLogger, services, now, version: 'pg-test', healthTimeoutMs: 6000 });
   type Res = { status: number; body: Record<string, any> }; // eslint-disable-line @typescript-eslint/no-explicit-any
   const call = async (method: string, path: string, o: { body?: unknown; token?: string } = {}): Promise<Res> => {
@@ -38,6 +42,7 @@ export function registerPgSuite(db: Db, label: string): void {
       const dir = fileURLToPath(new URL('../migrations', import.meta.url));
       await runMigrations(db, readMigrations(dir));
       await runSeed(db, CAREER_DATASETS);
+      await runMentorshipSeed(db);
     });
     after(async () => {
       await db.query('DELETE FROM users WHERE email LIKE $1', [`${TAG}-%`]);
@@ -48,6 +53,55 @@ export function registerPgSuite(db: Db, label: string): void {
       const names = (await db.query<{ name: string }>('SELECT name FROM schema_migrations ORDER BY name')).rows.map((r) => r.name);
       for (const m of ['001_initial_schema.sql', '002_auth_profile.sql', '003_career_core.sql', '004_evaluation_rules.sql']) assert.ok(names.includes(m), m);
       assert.deepEqual(await checkDatabase(db, 6000), { up: true });
+    });
+    it('mentorship: migration 005 is recorded, the demo seed is repeatable, and bookings take their price from the database', async () => {
+      assert.ok((await db.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.some((r) => r.name === '005_mentorship.sql'));
+      await runMentorshipSeed(db); // a second run changes nothing
+      const a = await reg('book-a'), b = await reg('book-b'); const sessionId = DEMO_MENTORS[0].sessions[0].id;
+      const list = await call('GET', '/api/mentors', { token: a.token }); assert.equal(list.status, 200); assert.ok(list.body.mentors.some((m: { id: string; isDemo: boolean }) => m.id === DEMO_MENTORS[0].id && m.isDemo));
+      const made = await call('POST', '/api/bookings', { token: a.token, body: { sessionId, amount: '0.01', userId: b.user.id, status: 'confirmed' } });
+      assert.equal(made.status, 201, JSON.stringify(made.body)); assert.equal(made.body.booking.amount, DEMO_MENTORS[0].sessions[0].price); assert.equal(made.body.booking.status, 'pending_payment');
+      const row = (await db.query<{ user_id: string; amount: string; status: string }>('SELECT user_id, amount::text AS amount, status FROM bookings WHERE id = $1', [made.body.booking.id])).rows[0];
+      assert.deepEqual(row, { user_id: a.user.id, amount: DEMO_MENTORS[0].sessions[0].price, status: 'pending_payment' });
+      assert.equal((await call('POST', '/api/bookings', { token: a.token, body: { sessionId } })).status, 409);
+      assert.equal((await call('POST', '/api/bookings', { token: a.token, body: { sessionId: '00000000-0000-4000-8000-0000000fffff' } })).status, 404);
+      assert.equal((await call('GET', '/api/bookings', { token: a.token })).body.bookings.length, 1); assert.equal((await call('GET', '/api/bookings', { token: b.token })).body.bookings.length, 0);
+    });
+    it('mentors follow the career in PostgreSQL: Lawyer -> legal mentor, Software Engineer -> technology mentor, bad sessions refused, context kept', async () => {
+      assert.ok((await db.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.some((r) => r.name === '007_mentor_fields.sql'));
+      const a = await reg('mc-a'), b = await reg('mc-b');
+      const made = await call('POST', '/api/careers', { token: a.token, body: { ...LAW, name: `Corporate Lawyer ${TAG} mc` } }); assert.equal(made.status, 201); const lawyer = made.body.career.id as string; createdCareers.push(lawyer);
+      const LAWM = DEMO_MENTORS.find((m) => m.fields.includes('law'))!, SWEM = DEMO_MENTORS.find((m) => m.fields.includes('technology'))!;
+      const ids = async (c: string, t = a.token) => ((await call('GET', `/api/mentors?careerId=${c}`, { token: t })).body.mentors as { id: string }[]).map((m) => m.id);
+      assert.deepEqual(await ids(lawyer), [LAWM.id]); assert.deepEqual(await ids('swe'), [SWEM.id]);
+      assert.equal((await call('GET', `/api/mentors?careerId=${lawyer}`, { token: b.token })).body.error.code, 'career_not_found'); // another student's private career
+      const bad = await call('POST', '/api/bookings', { token: a.token, body: { sessionId: SWEM.sessions[0].id, careerId: lawyer } });
+      assert.equal(bad.status, 409); assert.equal(bad.body.error.code, 'session_not_for_career');
+      const ok = await call('POST', '/api/bookings', { token: a.token, body: { sessionId: LAWM.sessions[0].id, careerId: lawyer } });
+      assert.equal(ok.status, 201, JSON.stringify(ok.body)); assert.equal(ok.body.booking.career.id, lawyer); assert.equal(ok.body.booking.mentor.id, LAWM.id); assert.equal(ok.body.booking.amount, LAWM.sessions[0].price);
+      // The database itself refuses a mismatched booking even if the service check were bypassed.
+      assert.equal(await createPgMentorshipRepos(db).createBooking((await db.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [`${TAG}-mc-a@example.test`])).rows[0].id, SWEM.sessions[1].id, { careerId: lawyer, careerName: 'x', field: 'law' }), null);
+      assert.equal(await createPgMentorshipRepos(db).createBooking((await db.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [`${TAG}-mc-b@example.test`])).rows[0].id, SWEM.sessions[1].id, null).then((x) => x?.career ?? null), null);
+      // Deleting the career keeps the booking and clears only its career.
+      assert.equal((await call('DELETE', `/api/careers/${lawyer}`, { token: a.token })).status, 204);
+      const left = (await call('GET', '/api/bookings', { token: a.token })).body.bookings as { career: unknown }[]; assert.equal(left.length, 1); assert.equal(left[0].career, null);
+    });
+    it('payments: migration 006 is recorded and the payment rules hold in PostgreSQL (price snapshot, one live order, atomic confirm, user scoping)', async () => {
+      assert.ok((await db.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.some((r) => r.name === '006_payments.sql'));
+      const a = await reg('pay-a'), b = await reg('pay-b'); const pay = createPgPaymentRepos(db), sessionId = DEMO_MENTORS[0].sessions[0].id;
+      const booking = (await call('POST', '/api/bookings', { token: a.token, body: { sessionId } })).body.booking.id as string;
+      assert.equal(await pay.createPayment(b.user.id, booking, `PGORD-${TAG}-x`), null); // not this user's booking
+      const p = await pay.createPayment(a.user.id, booking, `PGORD-${TAG}-1`);
+      assert.ok(p && p.status === 'created' && p.amount === DEMO_MENTORS[0].sessions[0].price && p.currency === 'USD' && p.captureId === null);
+      await assert.rejects(pay.createPayment(a.user.id, booking, `PGORD-${TAG}-2`), (e: unknown) => (e as { status?: number }).status === 409); // one live order per booking
+      assert.equal(await pay.completePayment(b.user.id, booking, `PGORD-${TAG}-1`, `PGCAP-${TAG}-1`), null); // another user cannot complete it
+      assert.equal((await call('GET', '/api/bookings', { token: a.token })).body.bookings[0].status, 'pending_payment');
+      const done = await pay.completePayment(a.user.id, booking, `PGORD-${TAG}-1`, `PGCAP-${TAG}-1`);
+      assert.ok(done && done.status === 'completed' && done.captureId === `PGCAP-${TAG}-1`);
+      assert.equal((await call('GET', '/api/bookings', { token: a.token })).body.bookings[0].status, 'confirmed');
+      assert.equal(await pay.completePayment(a.user.id, booking, `PGORD-${TAG}-1`, `PGCAP-${TAG}-1`), null); // second completion changes nothing
+      assert.equal(await pay.createPayment(a.user.id, booking, `PGORD-${TAG}-3`), null); // a confirmed booking cannot be paid again
+      assert.deepEqual((await pay.listPayments(b.user.id, booking)), []); assert.equal((await pay.listPayments(a.user.id, booking)).length, 1);
     });
     it('duplicate sign-up is a 409 (driver SQLSTATE 23505), wrong password is a 401, and tokens only open their own data', async () => {
       const a = await reg('dup');

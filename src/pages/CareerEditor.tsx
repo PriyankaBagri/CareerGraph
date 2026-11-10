@@ -129,7 +129,7 @@ export default function CareerEditor() {
         <Link to={mode.kind === 'edit' ? `/career/${encodeURIComponent(mode.id)}` : '/career'} className="text-sm text-ember underline">← {mode.kind === 'edit' ? 'Back to career' : 'Career Explorer'}</Link>
         <p className="eyebrow mt-2">Custom career</p>
         <h1 id="ce-h" className="text-3xl font-semibold">{title}</h1>
-        <p className="mt-1 max-w-2xl text-mute">Describe any career in your own terms: its capabilities, the skills inside them, and the level you aim for in each. CareerGraph then compares your ratings and evidence against <i>your</i> definition. The target levels are yours; they are not an official standard for the profession.</p>
+        <p className="mt-1 max-w-2xl text-mute">Describe any career: its skills and the level you aim for in each. CareerGraph compares you against <i>your</i> goals, not an official standard.</p>
         {loaded.legacyLocal && <p role="note" className="mt-3 rounded-lg border border-line p-3 text-sm text-mute">This career is saved only in this browser. Saving it here copies it to your account (the browser copy is kept); ratings and evidence tied to the browser-only version are not moved.</p>}
       </header>
 

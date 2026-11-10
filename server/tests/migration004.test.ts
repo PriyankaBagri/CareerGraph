@@ -13,8 +13,8 @@ const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n'
 describe('migration 004 (static review)', () => {
   it('is ordered after 001-003 and the first three files are untouched in name and number', () => {
     const names = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
-    assert.deepEqual(names, ['001_initial_schema.sql', '002_auth_profile.sql', '003_career_core.sql', '004_evaluation_rules.sql']);
-    assert.equal(readMigrations(dir).length, 4);
+    assert.deepEqual(names.slice(0, 4), ['001_initial_schema.sql', '002_auth_profile.sql', '003_career_core.sql', '004_evaluation_rules.sql']); // later migrations are allowed after these
+    assert.ok(readMigrations(dir).length >= 4);
   });
   it('is additive: no DROP TABLE/COLUMN, TRUNCATE, DELETE, UPDATE, RENAME or type change', () => {
     for (const bad of [/DROP\s+TABLE/i, /DROP\s+COLUMN/i, /TRUNCATE/i, /\bDELETE\b/i, /\bUPDATE\b/i, /RENAME/i, /ALTER\s+COLUMN/i, /DROP\s+SCHEMA/i, /DROP\s+DATABASE/i]) assert.ok(!bad.test(code), String(bad));

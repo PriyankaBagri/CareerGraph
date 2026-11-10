@@ -28,3 +28,4 @@ coverage
 *.db
 dumps/
 backups/
+.neon

@@ -65,7 +65,7 @@ export default function ReadinessCard({ readiness, skills }: { readiness: Readin
         <details className="mt-3 text-xs text-bark2">
           <summary className="cursor-pointer font-semibold">How this is calculated ({readiness.backend.evaluation.source === 'custom' ? "this career's own settings" : 'default rules'})</summary>
           <p className="mt-1">{readiness.backend.evaluation.description}.</p>
-          <p className="mt-1">Skill levels and evidence strength are what you entered; nothing here has been independently verified, and the rules are not an official standard for any profession.</p>
+          <p className="mt-1">Based on what you entered. Not verified, and not an official standard.</p>
         </details>
       )}
     </section>

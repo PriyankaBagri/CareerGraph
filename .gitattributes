@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# SQL migrations are hashed byte-for-byte, so they must always use LF line endings (Windows CRLF would change the checksum).
+server/migrations/*.sql text eol=lf

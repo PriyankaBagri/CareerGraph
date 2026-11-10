@@ -4,10 +4,18 @@ export interface Config {
   clientOrigins: string[];
   jwtSecret: string | null; tokenTtlSeconds: number;
   ai: AiConfig;
+  paypal: PayPalConfig;
 }
 // Server-only AI settings. The key never leaves this process: it is not sent to the browser, not logged, and not part of any API response.
 export interface AiConfig { provider: 'anthropic' | 'openai-compatible' | null; apiKey: string | null; model: string | null; baseUrl: string | null; timeoutMs: number; maxOutputTokens: number; ratePerMinute: number; problem: string | null }
 export const NO_AI: AiConfig = { provider: null, apiKey: null, model: null, baseUrl: null, timeoutMs: 20000, maxOutputTokens: 700, ratePerMinute: 10, problem: null };
+
+// Server-only PayPal settings (Sandbox only). The secret never leaves this process: not sent to the browser, not logged, not part of any API response.
+// Missing or invalid settings are NOT fatal: the rest of the app runs and the payment endpoints answer 503.
+export interface PayPalConfig { clientId: string | null; clientSecret: string | null; mode: 'sandbox'; baseUrl: string; timeoutMs: number; problem: string | null }
+export const PAYPAL_SANDBOX_API = 'https://api-m.sandbox.paypal.com';
+export const NO_PAYPAL: PayPalConfig = { clientId: null, clientSecret: null, mode: 'sandbox', baseUrl: PAYPAL_SANDBOX_API, timeoutMs: 15000, problem: null };
+export const paypalReady = (c: PayPalConfig): boolean => !!c.clientId && !!c.clientSecret && !c.problem;
 
 const intIn = (env: Record<string, string | undefined>, name: string, def: number, min: number, max: number): number => {
   const raw = env[name]?.trim();
@@ -34,6 +42,15 @@ export function loadAiConfig(env: Record<string, string | undefined>): AiConfig 
   return { provider: raw, apiKey, model, baseUrl: baseUrl || null, ...base, problem: null };
 }
 
+export function loadPayPalConfig(env: Record<string, string | undefined>): PayPalConfig {
+  const timeoutMs = intIn(env, 'PAYPAL_TIMEOUT_MS', NO_PAYPAL.timeoutMs, 1000, 60000);
+  const mode = env.PAYPAL_MODE?.trim().toLowerCase() ?? '';
+  if (mode && mode !== 'sandbox') return { ...NO_PAYPAL, timeoutMs, problem: 'PAYPAL_MODE must be "sandbox". Live payments are not supported.' };
+  const clientId = env.PAYPAL_CLIENT_ID?.trim() ?? '', clientSecret = env.PAYPAL_CLIENT_SECRET?.trim() ?? '';
+  if (!clientId || !clientSecret) return { ...NO_PAYPAL, timeoutMs };
+  return { ...NO_PAYPAL, clientId, clientSecret, timeoutMs };
+}
+
 // Reads and validates configuration once at start-up. Fails fast with a clear message; never logs secret values.
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const databaseUrl = env.DATABASE_URL?.trim() ?? '';
@@ -52,5 +69,5 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (production && secret.length < 32) throw new Error('JWT_SECRET must be set to at least 32 random characters in production.');
   const ttl = Number(env.JWT_EXPIRES_IN_SECONDS ?? 86400);
   if (!Number.isInteger(ttl) || ttl < 60 || ttl > 30 * 86400) throw new Error('JWT_EXPIRES_IN_SECONDS must be a whole number between 60 and 2592000.');
-  return { nodeEnv, production, port, databaseUrl, databaseSsl: env.DATABASE_SSL === 'true', clientOrigins: origins, jwtSecret: secret.length >= 32 ? secret : null, tokenTtlSeconds: ttl, ai: loadAiConfig(env) };
+  return { nodeEnv, production, port, databaseUrl, databaseSsl: env.DATABASE_SSL === 'true', clientOrigins: origins, jwtSecret: secret.length >= 32 ? secret : null, tokenTtlSeconds: ttl, ai: loadAiConfig(env), paypal: loadPayPalConfig(env) };
 }

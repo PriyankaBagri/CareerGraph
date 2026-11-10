@@ -7,6 +7,8 @@ import { healthRoute, liveRoute } from './health';
 import { readinessRoutes } from './readiness';
 import { profileRoutes } from './profile';
 import { progressRoutes } from './progress';
+import { mentorshipRoutes } from './mentorship';
+import { paymentRoutes } from './payments';
 
 // Later phases add their routes here. Handlers stay thin: route -> controller -> service -> repository.
-export const routes: Route[] = [healthRoute, liveRoute, ...authRoutes, ...profileRoutes, ...coreRoutes, ...readinessRoutes, ...progressRoutes, ...assistantRoutes, ...careerDraftRoutes];
+export const routes: Route[] = [healthRoute, liveRoute, ...authRoutes, ...profileRoutes, ...coreRoutes, ...readinessRoutes, ...progressRoutes, ...assistantRoutes, ...careerDraftRoutes, ...mentorshipRoutes, ...paymentRoutes];

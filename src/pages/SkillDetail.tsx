@@ -79,7 +79,7 @@ export default function SkillDetail() {
         <h2 id="ec-h" className="text-lg font-semibold">Your evidence</h2>
         {s.evidenceCount > 0 && <p className="mt-1 text-sm text-bark2">{s.evidenceCount} piece{s.evidenceCount === 1 ? '' : 's'} · strongest: {s.strongest ? STRENGTH_LABEL[s.strongest] : 'none'} · {COVERAGE_LABEL[s.coverage].toLowerCase()} coverage</p>}
         {s.evidenceCount === 0 ? (
-          <p className="mt-3 text-sm text-bark2">No evidence is linked to this skill yet. That only means nothing is recorded; it does not mean you lack the skill.</p>
+          <p className="mt-3 text-sm text-bark2">No evidence yet. That doesn't mean you lack the skill.</p>
         ) : (
           <ul className="mt-3 grid gap-3 md:grid-cols-2">
             {s.evidence.map((e) => {

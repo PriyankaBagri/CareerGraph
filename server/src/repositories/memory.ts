@@ -1,15 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { conflict } from '../errors';
 import { createMemoryCoreRepos } from './memory-core';
+import { createMemoryMentorshipRepos } from './memory-mentorship';
+import { createMemoryPaymentRepos } from './memory-payments';
 import { createMemoryProgressRepos } from './memory-progress';
 import type { ProfilePatch, ProfileRecord, Repos, UserRecord } from './types';
 
 // In-memory Repos used by tests. Mirrors the PostgreSQL behaviour (unique email, one profile per user, user-scoped updates).
-export function createMemoryRepos(seededCareerIds: string[], now: () => Date = () => new Date()): Repos & ReturnType<typeof createMemoryCoreRepos> & ReturnType<typeof createMemoryProgressRepos> & { users: Map<string, UserRecord>; profiles: Map<string, ProfileRecord> } {
+export function createMemoryRepos(seededCareerIds: string[], now: () => Date = () => new Date()): Repos & ReturnType<typeof createMemoryCoreRepos> & ReturnType<typeof createMemoryProgressRepos> & ReturnType<typeof createMemoryMentorshipRepos> & ReturnType<typeof createMemoryPaymentRepos> & { users: Map<string, UserRecord>; profiles: Map<string, ProfileRecord> } {
   const users = new Map<string, UserRecord>(), profiles = new Map<string, ProfileRecord>();
+  const mentorship = createMemoryMentorshipRepos(now);
   return {
     ...createMemoryCoreRepos(now),
     ...createMemoryProgressRepos(now),
+    ...mentorship,
+    ...createMemoryPaymentRepos(mentorship.bookings, now),
     users, profiles,
     async createUserWithProfile({ email, name, passwordHash }) {
       if ([...users.values()].some((u) => u.email === email)) throw conflict('An account with this email already exists.');

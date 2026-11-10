@@ -70,12 +70,8 @@ export default function Profile() {
       </section>
 
       <section className="card" aria-labelledby="pi-h">
-        <h2 id="pi-h" className="text-lg font-semibold">Personal information</h2>
-        <dl className="mt-2 divide-y divide-sand text-sm">
-          <div className="flex justify-between gap-4 py-2"><dt className="text-bark2">Name</dt><dd className="font-medium">{user.name}</dd></div>
-          <div className="flex justify-between gap-4 py-2"><dt className="text-bark2">Email</dt><dd className="font-medium">{user.email}</dd></div>
-        </dl>
-        <p className="mt-2 text-xs text-bark2">{api.useBackend('auth') ? 'Name and email come from your CareerGraph account sign-in and cannot be edited here. Your profile, target career, ratings and progress are saved to your account.' : "Name and email belong to your local demo account and can't be edited here."}</p>
+        <h2 id="pi-h" className="text-lg font-semibold">Account</h2>
+        <p className="mt-1 text-sm text-mute">Signed in as <span className="font-medium text-white">{user.name}</span>. Your name, email and sign-out are in <Link to="/settings" className="text-ember underline">Settings</Link>.</p>
       </section>
 
       <section className="card" aria-labelledby="bg-h">

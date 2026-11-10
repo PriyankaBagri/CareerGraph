@@ -10,7 +10,7 @@ export default function PlainSummary({ view, actions, compact = false }: { view:
   return (
     <section className={compact ? 'px-1' : 'card'} aria-labelledby="plain-h" data-testid="plain-summary">
       <h2 id="plain-h" className="eyebrow">In plain words</h2>
-      {empty && <p className="mt-2 rounded-lg border border-line p-3 text-sm">You have not rated any skills or added evidence yet, so there is nothing to compare. <Link to="/skills" className="text-ember underline">Rate a few skills</Link> to begin: it takes a few minutes and an honest rough rating is enough.</p>}
+      {empty && <p className="mt-2 rounded-lg border border-line p-3 text-sm">Nothing rated yet. <Link to="/skills" className="text-ember underline">Rate a few skills</Link> to begin. A rough, honest rating is enough.</p>}
       <ul className="mt-2 space-y-2 text-sm">
         {!compact && <li><b>Where you are:</b> {s.where}</li>}
         <li><b>What is rated:</b> {s.rated}{s.contributing ? ` ${s.contributing}` : ''}{!compact && s.gaps ? ` ${s.gaps}` : ''}</li>

@@ -37,21 +37,21 @@ export default function EvidenceForm({ initial, presetSkillIds, capabilities, on
   const meaning = STRENGTH_LEVELS.find((l) => l.value === f.strength)?.meaning;
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-black/70 p-4" onKeyDown={(e) => e.key === 'Escape' && onClose()}>
-      <div role="dialog" aria-modal="true" aria-labelledby="ev-form-h" className="card my-6 w-full max-w-xl animate-rise">
+    <div className="fixed inset-0 z-40 overflow-y-auto bg-black/70" onKeyDown={(e) => e.key === 'Escape' && onClose()}>
+      <div className="flex min-h-full items-start justify-center p-3 sm:items-center sm:p-4"><div role="dialog" aria-modal="true" aria-labelledby="ev-form-h" className="card w-full max-w-xl animate-rise">
         <h2 id="ev-form-h" className="text-xl font-semibold">{initial ? 'Edit evidence' : 'Add evidence'}</h2>
-        <p className="mt-1 text-sm text-bark2">Evidence turns “I know this” into “I can show this”. It supports the skills you pick, adds to their coverage, and changes your readiness and gaps. Fields marked * are required.</p>
+        <p className="mt-1 text-sm text-bark2">Add a project, certificate or experience to show what you can do. Fields marked * are required.</p>
         <form onSubmit={submit} noValidate className="mt-4 space-y-4">
           {errors.form && <p role="alert" className="rounded-lg border border-bad bg-bad/10 p-3 text-sm text-bad">⚠ {errors.form}</p>}
           <div><label htmlFor="ev-title" className="mb-1 block text-sm font-medium">What did you do? (title) *</label><input id="ev-title" autoFocus className={`${field} ${errors.title ? 'border-bad' : 'border-sand'}`} value={f.title} onChange={(e) => set('title', e.target.value)} maxLength={120} /><Err k="title" /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div><label htmlFor="ev-type" className="mb-1 block text-sm font-medium">Type</label><select id="ev-type" className={`${field} border-sand`} value={f.type} onChange={(e) => set('type', e.target.value)}>{EVIDENCE_TYPES.map((t) => <option key={t}>{t}</option>)}</select></div>
-            <div><label htmlFor="ev-date" className="mb-1 block text-sm font-medium">When did it happen? (optional)</label><input id="ev-date" type="date" className={`${field} border-sand`} value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
+            <div><label htmlFor="ev-date" className="mb-1 block text-sm font-medium">Date (optional)</label><input id="ev-date" type="date" className={`${field} border-sand`} value={f.date} onChange={(e) => set('date', e.target.value)} /></div>
           </div>
-          <div><label htmlFor="ev-desc" className="mb-1 block text-sm font-medium">What did it demonstrate? *</label><textarea id="ev-desc" rows={3} className={`${field} ${errors.description ? 'border-bad' : 'border-sand'}`} value={f.description} onChange={(e) => set('description', e.target.value)} /><Err k="description" /></div>
+          <div><label htmlFor="ev-desc" className="mb-1 block text-sm font-medium">What did it show? *</label><textarea id="ev-desc" rows={3} className={`${field} ${errors.description ? 'border-bad' : 'border-sand'}`} value={f.description} onChange={(e) => set('description', e.target.value)} /><Err k="description" /></div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div><label htmlFor="ev-org" className="mb-1 block text-sm font-medium">Organization / source (optional)</label><input id="ev-org" className={`${field} border-sand`} value={f.organization} onChange={(e) => set('organization', e.target.value)} /></div>
-            <div><label htmlFor="ev-url" className="mb-1 block text-sm font-medium">Where can it be verified? (link, optional)</label><input id="ev-url" inputMode="url" className={`${field} ${errors.url ? 'border-bad' : 'border-sand'}`} value={f.url} onChange={(e) => set('url', e.target.value)} /><Err k="url" /></div>
+            <div><label htmlFor="ev-org" className="mb-1 block text-sm font-medium">Organization (optional)</label><input id="ev-org" className={`${field} border-sand`} value={f.organization} onChange={(e) => set('organization', e.target.value)} /></div>
+            <div><label htmlFor="ev-url" className="mb-1 block text-sm font-medium">Link (optional)</label><input id="ev-url" inputMode="url" className={`${field} ${errors.url ? 'border-bad' : 'border-sand'}`} value={f.url} onChange={(e) => set('url', e.target.value)} /><Err k="url" /></div>
           </div>
           <div><label htmlFor="ev-str" className="mb-1 block text-sm font-medium">How strong is it? *</label><select id="ev-str" className={`${field} border-sand`} value={f.strength} onChange={(e) => set('strength', e.target.value)}>{STRENGTH_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}</select><p className="mt-1 text-xs text-bark2">{meaning} This is CareerGraph's own quality scale, not an objective rating.</p></div>
           <fieldset><legend className="mb-1 text-sm font-medium">Which skills does it support? * <span className="font-normal text-bark2">(pick at least one)</span></legend>
@@ -64,12 +64,13 @@ export default function EvidenceForm({ initial, presetSkillIds, capabilities, on
             ))}
             <Err k="skills" />
           </fieldset>
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="sticky bottom-0 -mx-1 flex justify-end gap-3 bg-panel px-1 py-2">
             <button type="button" className="rounded-lg border border-sand px-4 py-2" onClick={onClose} disabled={busy}>Cancel</button>
             <button className="btn" disabled={busy}>{busy ? 'Saving…' : initial ? 'Save changes' : 'Add evidence'}</button>
           </div>
         </form>
       </div>
+    </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { NO_AI, type Config } from '../src/config';
+import { NO_AI, NO_PAYPAL, type Config } from '../src/config';
 import type { Db, Queryable, QueryResult } from '../src/db/types';
 import { createHandler } from '../src/http/handler';
 import type { AppContext, RawRequest, Route } from '../src/http/types';
@@ -8,6 +8,7 @@ import { CAREER_DATASETS } from '../src/domain/shared';
 import { createMemoryRepos } from '../src/repositories/memory';
 import { createServices } from '../src/services';
 import type { AiProvider } from '../src/ai/provider';
+import type { PayPalFetch } from '../src/payments/paypal';
 
 export interface Recorded { text: string; params?: unknown[] }
 // In-memory Db double: records every query, simulates schema_migrations, and rolls back on failure like a real transaction.
@@ -33,7 +34,7 @@ export class FakeDb implements Db {
   async close() { this.closed = true; }
 }
 
-export const testConfig = (over: Partial<Config> = {}): Config => ({ nodeEnv: 'test', production: false, port: 4000, databaseUrl: 'postgres://user:SECRETPW@dbhost:5432/cg', databaseSsl: false, clientOrigins: ['http://localhost:5173'], jwtSecret: 'test-secret-'.padEnd(48, 'x'), tokenTtlSeconds: 3600, ai: { ...NO_AI }, ...over });
+export const testConfig = (over: Partial<Config> = {}): Config => ({ nodeEnv: 'test', production: false, port: 4000, databaseUrl: 'postgres://user:SECRETPW@dbhost:5432/cg', databaseSsl: false, clientOrigins: ['http://localhost:5173'], jwtSecret: 'test-secret-'.padEnd(48, 'x'), tokenTtlSeconds: 3600, ai: { ...NO_AI }, paypal: { ...NO_PAYPAL }, ...over });
 const seededIds = CAREER_DATASETS.map((d) => d.career.id);
 export function makeCtx(over: Partial<AppContext> = {}, db: FakeDb = new FakeDb(), logger: Logger = silentLogger): AppContext {
   const config = over.config ?? testConfig();
@@ -45,12 +46,12 @@ export const req = (over: Partial<RawRequest> = {}): RawRequest => ({ method: 'G
 export const makeHandler = (routes: Route[], ctx: AppContext) => createHandler(routes, ctx);
 
 // A full in-memory app: real routes + auth middleware + services over memory repositories. `clock.ms` can be advanced to test expiry.
-export function makeApp(over: { config?: Partial<Config>; now?: () => Date; aiProvider?: AiProvider | null; logger?: Logger } = {}) {
+export function makeApp(over: { config?: Partial<Config>; now?: () => Date; aiProvider?: AiProvider | null; paypalFetch?: PayPalFetch; logger?: Logger } = {}) {
   const clock = { ms: Date.parse('2026-01-01T00:00:00.000Z') };
   const now = over.now ?? (() => new Date(clock.ms));
   const config = testConfig(over.config);
   const repos = createMemoryRepos(seededIds, now);
-  const ctx = makeCtx({ config, now, services: createServices({ repos, config, now, aiProvider: over.aiProvider, logger: over.logger }) });
+  const ctx = makeCtx({ config, now, services: createServices({ repos, config, now, aiProvider: over.aiProvider, paypalFetch: over.paypalFetch, logger: over.logger }) });
   const handler = createHandler(appRoutes, ctx);
   const call = async (method: string, path: string, o: { body?: unknown; token?: string; headers?: Record<string, string> } = {}) => {
     const headers: Record<string, string | undefined> = { ...(o.token ? { authorization: `Bearer ${o.token}` } : {}), ...o.headers };

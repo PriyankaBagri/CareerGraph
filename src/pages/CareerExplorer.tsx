@@ -10,6 +10,7 @@ import { careerIntelligenceService } from '../services/careerIntelligence';
 import { careerService } from '../services/career';
 import { friendlyDraftError, requestAiDraft, templateDraft, type DraftState } from '../services/careerDraft';
 import { api } from '../services/api';
+import { CAREER_DIRECTORY } from '../data/careerDirectory';
 import type { Career, CareerSummary } from '../types';
 
 const field = 'w-full rounded-lg border border-sand bg-white px-3 py-2 text-bark';
@@ -38,6 +39,9 @@ export default function CareerExplorer() {
   const fields = [...new Set((careers ?? []).map((c) => c.category).filter(Boolean))].sort((x, y) => x.localeCompare(y));
   const match = (c: CareerSummary) => (!fieldFilter || c.category === fieldFilter) && (!q || `${c.name} ${c.category} ${c.description}`.toLowerCase().includes(q.toLowerCase()));
   const mine = careers?.filter((c) => c.source !== 'seed' && match(c)) ?? [];
+  const known = new Set((careers ?? []).map((c) => c.name.trim().toLowerCase()));
+  const ideas = Object.entries(CAREER_DIRECTORY).map(([f, names]) => [f, names.filter((n) => !known.has(n.toLowerCase()) && (!fieldFilter || fieldFilter === f) && (!q || `${n} ${f}`.toLowerCase().includes(q.toLowerCase())))] as const).filter(([, names]) => names.length > 0);
+  const startIdea = (name: string, f: string) => { setForm({ name, field: f, description: '' }); setFormError(null); setPhase('form'); document.getElementById('any-h')?.scrollIntoView({ behavior: 'smooth' }); };
   const catalog = careers?.filter((c) => c.source === 'seed' && match(c)) ?? [];
 
   async function analyze(force = false, nameOverride?: string) {
@@ -90,8 +94,8 @@ export default function CareerExplorer() {
       <header>
         <p className="eyebrow">Career explorer</p>
         <h1 className="text-3xl font-semibold">Explore careers</h1>
-        <p className="mt-1 max-w-2xl text-mute">Explore different career paths and see how your current skills and evidence relate to each one. Exploring never changes your target career.</p>
-        <div className="mt-4 flex flex-wrap gap-3"><Link to="/career/new" className="btn">Create your own career</Link><span className="self-center text-sm text-mute">Define any profession yourself: capabilities, skills and the level you aim for in each.</span></div>
+        <p className="mt-1 max-w-2xl text-mute">See how your skills fit each career. Browsing never changes your target.</p>
+        <div className="mt-4 flex flex-wrap gap-3"><Link to="/career/new" className="btn">Create your own career</Link><span className="self-center text-sm text-mute">Build a career from scratch.</span></div>
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -102,7 +106,7 @@ export default function CareerExplorer() {
 
 
       <section className="card-dark" aria-labelledby="any-h">
-        <h2 id="any-h" className="text-xl font-semibold">Can't find your career? Analyze any career</h2>
+        <h2 id="any-h" className="text-xl font-semibold">Start any career</h2>
         {serverDrafts && draft && <div className="mt-4"><CareerDraftReview key={draft.source + draft.model.name} state={draft} onDiscard={() => setDraft(null)} /></div>}
         {phase !== 'preview' && !(serverDrafts && draft) && (
           <form className="mt-4 grid gap-4 md:grid-cols-2" noValidate onSubmit={(e) => { e.preventDefault(); if (serverDrafts) void makeDraft('ai'); else void analyze(); }}>
@@ -137,10 +141,20 @@ export default function CareerExplorer() {
       {!careers && !error && <div className="grid gap-4 md:grid-cols-2"><Skeleton className="h-40" /><Skeleton className="h-40" /></div>}
       {careers && mine.length > 0 && <section aria-label="Your career models" className="space-y-3"><h2 className="text-lg font-semibold">Your career models</h2><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{mine.map((c) => <Card key={c.id} c={c} />)}</div></section>}
       {careers && (
-        <section aria-label="Explore careers" className="space-y-3"><h2 className="text-lg font-semibold">Popular careers <span className="text-sm font-normal text-mute">· examples, not limits</span></h2>
+        <section aria-label="Explore careers" className="space-y-3"><h2 className="text-lg font-semibold">Careers with a ready skills model</h2>
           {catalog.length === 0 ? (
             <div className="card-dark"><p>No saved career matches your search.</p>{q.trim() && <button className="btn mt-3" onClick={() => { setForm({ ...form, name: q.trim() }); setQ(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Analyze “{q.trim()}”</button>}</div>
           ) : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{catalog.map((c) => <Card key={c.id} c={c} />)}</div>}
+        </section>
+      )}
+      {careers && ideas.length > 0 && (
+        <section aria-label="More careers to try" className="space-y-3">
+          <h2 className="text-lg font-semibold">More careers to try <span className="text-sm font-normal text-mute">· no skills model yet, we draft one for you to review</span></h2>
+          <div className="space-y-3">
+            {ideas.map(([f, names]) => (
+              <div key={f}><p className="mb-1 text-sm text-mute">{f}</p><ul className="flex flex-wrap gap-2">{names.map((n) => <li key={n}><button className="btn-quiet" onClick={() => startIdea(n, f)}>{n}</button></li>)}</ul></div>
+            ))}
+          </div>
         </section>
       )}
     </div>

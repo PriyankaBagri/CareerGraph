@@ -10,8 +10,10 @@ export interface ProfilePatch {
 }
 
 import type { CoreRepos } from './core-types';
+import type { MentorshipRepos } from './mentorship-types';
+import type { PaymentRepos } from './payment-types';
 import type { ProgressRepos } from './progress-types';
-export type AllRepos = Repos & CoreRepos & ProgressRepos;
+export type AllRepos = Repos & CoreRepos & ProgressRepos & MentorshipRepos & PaymentRepos;
 
 export interface Repos {
   // Creates the user AND their profile atomically. Throws a 409 conflict AppError if the email is taken.

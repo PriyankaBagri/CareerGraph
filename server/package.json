@@ -10,12 +10,14 @@
     "start:prod": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test:pg": "tsx --env-file=.env --test tests/pg.integration.test.ts",
+    "paypal:check": "tsx --env-file=.env src/payments/check.ts",
     "db:check": "tsx --env-file=.env src/db/check.ts",
     "db:check:prod": "tsx src/db/check.ts",
     "db:migrate:prod": "tsx src/db/migrate.ts",
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",
-    "test": "tsx --test tests/careerDraft.test.ts tests/guidance.test.ts tests/crypto.test.ts tests/auth.test.ts tests/migration002.test.ts tests/frontend-contract.test.ts tests/config.test.ts tests/validation.test.ts tests/http.test.ts tests/health.test.ts tests/migrations.test.ts tests/schema.test.ts tests/seed.test.ts tests/smoke.test.ts tests/migration003.test.ts tests/core.test.ts tests/readiness.test.ts tests/listenError.test.ts tests/dbDiagnose.test.ts tests/customCareer.test.ts tests/persistence.test.ts tests/evaluation.test.ts tests/migration004.test.ts tests/assistant.test.ts tests/slice2.test.ts tests/stage9.test.ts tests/backendSprint.test.ts"
+    "db:seed:prod": "tsx src/db/seed.ts",
+    "test": "tsx --test tests/mentorship.test.ts tests/migration005.test.ts tests/paypal.test.ts tests/payments.test.ts tests/migration006.test.ts tests/paymentSetup.test.ts tests/paypalDiagnose.test.ts tests/mentorCareers.test.ts tests/plan.test.ts tests/assistantPlan.test.ts tests/planFallback.test.ts tests/careerDraft.test.ts tests/guidance.test.ts tests/crypto.test.ts tests/auth.test.ts tests/migration002.test.ts tests/frontend-contract.test.ts tests/config.test.ts tests/validation.test.ts tests/http.test.ts tests/health.test.ts tests/migrations.test.ts tests/schema.test.ts tests/seed.test.ts tests/smoke.test.ts tests/migration003.test.ts tests/core.test.ts tests/readiness.test.ts tests/listenError.test.ts tests/dbDiagnose.test.ts tests/customCareer.test.ts tests/persistence.test.ts tests/evaluation.test.ts tests/migration004.test.ts tests/assistant.test.ts tests/slice2.test.ts tests/stage9.test.ts tests/backendSprint.test.ts"
   },
   "dependencies": { "express": "^4.19.2", "pg": "^8.12.0", "tsx": "^4.19.0" },
   "devDependencies": { "@types/express": "^4.17.21", "@types/node": "^22.5.0", "@types/pg": "^8.11.6", "typescript": "^5.5.4" }

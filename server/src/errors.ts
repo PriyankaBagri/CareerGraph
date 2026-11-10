@@ -10,5 +10,10 @@ export const conflict = (message: string) => new AppError(409, 'conflict', messa
 export const payloadTooLarge = () => new AppError(413, 'payload_too_large', 'The request body is too large.');
 export const authNotConfigured = () => new AppError(503, 'auth_not_configured', 'Authentication is not configured on this server.', undefined, true);
 export const tooManyRequests = (retryAfterSeconds: number) => new AppError(429, 'rate_limited', 'Too many requests. Please wait a moment and try again.', { retryAfterSeconds });
+// A Postgres "undefined_table" error means a migration has not been run on this database. The fix is a command, so say it.
+export const databaseNotMigrated = () => new AppError(503, 'database_not_migrated', 'The database is missing a table. In the server folder run "npm run db:migrate", then restart the server.', undefined, true);
+export const paymentsNotConfigured = () => new AppError(503, 'payments_not_configured', 'Payments are not configured on this server.', undefined, true);
+// Fixed, generic text only: never the PayPal response, URL or any credential.
+export const paymentError = (status: number, code: string, message: string) => new AppError(status, code, message, undefined, true);
 export const aiNotConfigured = () => new AppError(503, 'ai_not_configured', 'The AI assistant is not configured on this server.', undefined, true);
 export const aiUnavailable = (code: 'ai_unavailable' | 'ai_timeout' | 'ai_busy', message: string) => new AppError(code === 'ai_timeout' ? 504 : code === 'ai_busy' ? 503 : 502, code, message, undefined, true); // generic, fixed text: safe to show

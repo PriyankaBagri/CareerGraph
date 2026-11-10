@@ -94,7 +94,7 @@ export default function CareerGraph({ career, evidence, overall, readinessText, 
   const skillBtn = (id: string, label?: string) => <button type="button" className="underline" onClick={() => select(id)}>{label ?? byId.get(id)?.name ?? id}</button>;
 
   const detail = () => {
-    if (!sel) return <p className="text-mute">Select any node, or any item in the list, to see what it means for you: its status, the evidence behind it, why an action is ranked where it is, and what could show progress.</p>;
+    if (!sel) return <p className="text-mute">Select any item to see what it means for you.</p>;
     const n = nodeById.get(sel);
     if (!n) return null;
     if (n.kind === 'career') return <><b>{career.name}</b><p>Readiness {readinessText ?? `${overall}%`} across {career.capabilities.length} capabilities and {analysis.length} skills.</p><p className="text-mute">{needAttention} of {analysis.length} skills need attention (below target, evidence missing or thin, or not assessed). {open.length} open next action{open.length === 1 ? '' : 's'}.</p></>;
@@ -130,7 +130,7 @@ export default function CareerGraph({ career, evidence, overall, readinessText, 
             {x.ruleText && <details className="mt-1 text-xs text-mute"><summary className="cursor-pointer">How actions are ranked</summary><p className="mt-1">{x.ruleText}</p></details>}</div>
           {x.doneWhen && <p><b>Done when:</b> {x.doneWhen}</p>}
           <div><b>Evidence that could show progress</b><ul className="mt-1 list-disc space-y-1 pl-5">{x.evidenceToProduce.map((e, i) => <li key={i}>{e.text} <span className="text-xs text-mute">({e.source})</span></li>)}</ul></div>
-          <p className="text-xs text-mute">Ranks are rule-based from your own ratings and evidence. They are not deadlines or predictions of any outcome.</p>
+          <p className="text-xs text-mute">Ranks come from your own ratings and evidence. They are not deadlines or predictions.</p>
           <Link className="font-semibold text-ember underline" to="/roadmap">Open Roadmap to track this action</Link>
         </>
       );
@@ -158,7 +158,7 @@ export default function CareerGraph({ career, evidence, overall, readinessText, 
     <section className="card-dark" aria-labelledby="graph-h" aria-busy={refreshing}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h2 id="graph-h" className="text-lg font-semibold">Career action graph</h2>
-          <p className="mb-2 max-w-2xl text-sm text-mute">Career → capabilities → skills → evidence → next actions. Select anything for its status, the evidence behind it, and why an action is ranked where it is. {crowded ? 'This career is large, so the list view is shown first.' : ''}</p></div>
+          <p className="mb-2 max-w-2xl text-sm text-mute">Career → capabilities → skills → evidence → next actions. Select anything to see why. {crowded ? 'This career is large, so the list view is shown first.' : ''}</p></div>
         <div role="tablist" aria-label="Graph view" className="flex gap-2">{tab('graph', 'Graph')}{tab('list', 'List')}</div>
       </div>
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-mute">

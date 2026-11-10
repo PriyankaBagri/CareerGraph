@@ -1,23 +1,30 @@
 import { createApp } from './app';
-import { loadConfig } from './config';
+import { loadConfig, paypalReady } from './config';
 import { createPgDb } from './db/pool';
 import { HEALTH_TIMEOUT_MS } from './db/timeouts';
 import { createPgRepos } from './repositories/pg';
 import { createPgCoreRepos } from './repositories/pg-core';
+import { createPgMentorshipRepos } from './repositories/pg-mentorship';
+import { createPgPaymentRepos } from './repositories/pg-payments';
 import { createPgProgressRepos } from './repositories/pg-progress';
 import { createServices } from './services';
 import { checkDatabase } from './routes/health';
 import { REASON_HINT } from './db/diagnose';
+import { diagnosePayPal } from './payments/diagnose';
+import { warnIfTablesMissing } from './db/setupCheck';
 import { routes } from './routes';
 import { consoleLogger as logger } from './logger';
 import { describeListenError } from './utils/listenError';
 
 const config = loadConfig(process.env);
 const db = createPgDb({ url: config.databaseUrl, ssl: config.databaseSsl, logger });
-const services = createServices({ repos: { ...createPgRepos(db), ...createPgCoreRepos(db), ...createPgProgressRepos(db) }, config, logger });
+const services = createServices({ repos: { ...createPgRepos(db), ...createPgCoreRepos(db), ...createPgProgressRepos(db), ...createPgMentorshipRepos(db), ...createPgPaymentRepos(db) }, config, logger });
 if (config.ai.problem) logger.warn(`AI assistant disabled: ${config.ai.problem}`);
 else if (config.ai.provider) logger.info('AI assistant enabled', { provider: config.ai.provider, model: config.ai.model });
 else logger.info('AI assistant not configured (AI_PROVIDER is empty); the app works without it.');
+if (config.paypal.problem) logger.warn(`PayPal payments disabled: ${config.paypal.problem}`);
+else if (paypalReady(config.paypal)) logger.info('PayPal Sandbox payments enabled', { returnTo: config.clientOrigins[0] ?? 'http://localhost:5173' });
+else logger.warn('PayPal payments not configured (PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET are empty): paying for a booking will answer 503.');
 if (!config.jwtSecret) logger.warn('JWT_SECRET is not set (or shorter than 32 characters): authentication endpoints will answer 503 until it is configured.');
 const app = createApp(routes, { config, db, logger, services, now: () => new Date(), version: process.env.npm_package_version ?? '0.1.0', healthTimeoutMs: HEALTH_TIMEOUT_MS });
 
@@ -25,6 +32,9 @@ const server = app.listen(config.port, async () => {
   logger.info('CareerGraph API listening', { port: config.port, env: config.nodeEnv });
   const first = await checkDatabase(db, HEALTH_TIMEOUT_MS);
   if (!first.up) logger.warn(`Database is not reachable (${first.reason}). ${REASON_HINT[first.reason!]} Run "npm run db:check" for details.`);
+  else await warnIfTablesMissing(db, logger);
+  // One quick sign-in to PayPal Sandbox so bad keys or no internet show up here, not when a student presses Pay.
+  if (paypalReady(config.paypal)) for (const step of await diagnosePayPal(config.paypal, config.clientOrigins[0] ?? 'http://localhost:5173', { createOrder: false })) { const line = `PayPal check - ${step.name}: ${step.detail}`; if (step.ok) logger.info(line); else logger.warn(line); }
 });
 server.on('error', (err: NodeJS.ErrnoException) => { logger.error(describeListenError(err, config.port)); process.exit(1); });
 const shutdown = (signal: string) => { logger.info('Shutting down', { signal }); server.close(async () => { await db.close(); process.exit(0); }); };

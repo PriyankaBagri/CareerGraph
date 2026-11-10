@@ -50,7 +50,7 @@ export default function Compare() {
   return (
     <div className="animate-rise space-y-6">
       <header><p className="eyebrow">Compare careers</p><h1 className="text-3xl font-semibold">Career comparison</h1>
-        <p className="max-w-2xl text-mute">See the factual differences between two career models and how your current skills and evidence relate to each. CareerGraph does not score or order careers; the decision is yours.</p></header>
+        <p className="max-w-2xl text-mute">Compare two careers side by side. CareerGraph doesn't rank them. The choice is yours.</p></header>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div><label htmlFor="ca" className="mb-1 block text-sm text-mute">Career A</label><select id="ca" className={sel} value={a} onChange={(e) => setSel('a', e.target.value)}><option value="">Select a career</option>{careers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
@@ -61,7 +61,7 @@ export default function Compare() {
       {(!a || !b) && (
         <div className="card-dark" data-testid="compare-empty">
           <p className="font-semibold">{a ? `Pick a second career to compare with ${careers.find((c) => c.id === a)?.name ?? 'your target'}.` : 'Choose two careers to compare.'}</p>
-          <p className="mt-1 text-sm text-mute">You will see how the two models differ and how your current ratings relate to each. A career you have not rated yet is shown as "Not assessed", never as a score.</p>
+          <p className="mt-1 text-sm text-mute">See how they differ and how your skills fit each. A career you haven't rated shows "Not assessed", never a score.</p>
           {a && careers.filter((c) => c.id !== a).length > 0 && <div className="mt-3 flex flex-wrap gap-2" aria-label="Quick picks">{careers.filter((c) => c.id !== a).slice(0, 5).map((c) => <button key={c.id} type="button" className="btn-quiet" onClick={() => setSel('b', c.id)}>{c.name}</button>)}</div>}
         </div>
       )}

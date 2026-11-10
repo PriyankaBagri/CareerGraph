@@ -133,7 +133,7 @@ describe('AI career draft flow (frontend service + real backend)', () => {
 
 import { readFileSync } from 'node:fs';
 describe('component source guards (not rendered; the real browser is unverified)', () => {
-  const src = (p: string) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8');
+  const src = (p: string) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   it('login and signup show setup guidance when unconfigured and demo credentials only in demo mode', () => {
     for (const f of ['pages/Login.tsx', 'pages/Signup.tsx']) assert.match(src(f), /appMode\(\) === 'unconfigured' \? <SetupNotice/);
     const login = src('pages/Login.tsx'); assert.match(login, /appMode\(\) === 'demo' && /); assert.ok(!/!api\.useBackend\('auth'\) &&/.test(login));

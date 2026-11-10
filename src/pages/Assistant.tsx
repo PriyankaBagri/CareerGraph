@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import WeeklyPlan from '../components/ai/WeeklyPlan';
 import Skeleton from '../components/ui/Skeleton';
 import { useCareerAnalysis } from '../hooks/useCareerAnalysis';
 import { useProfile } from '../hooks/useProfile';
@@ -12,10 +13,10 @@ import { buildAssistantContext } from '../utils/assistant';
 // Which engine answers is decided by the SERVER (it holds the model credentials). There is never a silent switch: a failed AI call shows an error.
 type Mode = { kind: 'checking' } | { kind: 'ai'; label: string; model: string } | { kind: 'rules'; why: 'local' | 'not_configured' | 'misconfigured' | 'unknown' };
 const WHY: Record<'local' | 'not_configured' | 'misconfigured' | 'unknown', string> = {
-  local: 'AI answers need the CareerGraph server, which is not connected in this mode.',
-  not_configured: 'No AI model is configured on this server (see the README, "AI assistant").',
-  misconfigured: "The server's AI settings are incomplete, so the AI model is switched off.",
-  unknown: "Couldn't check whether an AI model is available.",
+  local: 'It needs the CareerGraph server.',
+  not_configured: 'No AI model is set up on this server.',
+  misconfigured: "The server's AI settings are incomplete.",
+  unknown: "Couldn't check for an AI model.",
 };
 
 export default function Assistant() {
@@ -76,18 +77,20 @@ export default function Assistant() {
       <header>
         <p className="eyebrow">Career assistant</p>
         <h1 className="text-3xl font-semibold">Ask about your career plan</h1>
-        <p className="mt-1 max-w-2xl text-mute">{mode.kind === 'ai' ? `Ask about your ${ctx.careerName} skills, evidence, readiness, gaps and roadmap. Answers use your CareerGraph data and can be wrong. Questions outside career planning are politely redirected.` : `Without an AI model this can only explain your saved ${ctx.careerName} data: readiness, gaps, evidence and next steps. Open-ended questions need an AI model.`}</p>
+        <p className="mt-1 max-w-2xl text-mute">{mode.kind === 'ai' ? `Ask about your ${ctx.careerName} plan. Answers can be wrong.` : `Answers come from your saved ${ctx.careerName} data. No AI model is used.`}</p>
         <p className="mt-2 inline-block rounded-lg px-0 py-1 text-xs text-mute" role="status" data-testid="assistant-engine">
           {mode.kind === 'checking' && 'Checking which assistant is available…'}
-          {mode.kind === 'ai' && `AI model: ${mode.label}${mode.model ? ` (${mode.model})` : ''}. Replies are AI-generated and not verified.`}
+          {mode.kind === 'ai' && `AI model: ${mode.label}${mode.model ? ` (${mode.model})` : ''}. Replies are AI-generated.`}
           {mode.kind === 'rules' && `${p.label}. This is not an AI model. ${WHY[mode.why]}`}
           {mode.kind === 'rules' && mode.why === 'unknown' && <button type="button" className="ml-2 underline" onClick={() => setStatusTry((n) => n + 1)}>Check again</button>}
         </p>
       </header>
 
+      {targetId && <WeeklyPlan careerId={targetId} />}
+
       <section className="card-dark" aria-label="Conversation">
         <div className="max-h-[28rem] min-h-[10rem] space-y-3 overflow-y-auto pr-1" aria-live="polite">
-          {messages.length === 0 && <p className="text-mute">{mode.kind === 'ai' ? 'Try a suggestion below, or type your own question.' : 'Pick a suggestion below, or ask about your readiness, gaps, evidence or next steps.'}</p>}
+          {messages.length === 0 && <p className="text-mute">{mode.kind === 'ai' ? 'Try a suggestion, or type a question.' : 'Pick a suggestion, or ask about your gaps or next steps.'}</p>}
           {messages.map((m) => (
             <div key={m.id} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
               <div className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm ${m.role === 'user' ? 'bg-ember text-ink' : m.error ? 'border border-bad' : 'bg-cream text-bark'}`}>

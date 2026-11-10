@@ -83,6 +83,8 @@ describe('.env loading of DATABASE_URL (regression for the "database down" repor
 import { createHandler } from '../src/http/handler';
 import { createServices } from '../src/services';
 import { createPgRepos } from '../src/repositories/pg';
+import { createPgMentorshipRepos } from '../src/repositories/pg-mentorship';
+import { createPgPaymentRepos } from '../src/repositories/pg-payments';
 import { createPgCoreRepos } from '../src/repositories/pg-core';
 import { createPgProgressRepos } from '../src/repositories/pg-progress';
 import { testConfig } from './helpers';
@@ -91,7 +93,7 @@ describe('regressions found while verifying against PostgreSQL', () => {
     const db = new FakeDb(); const orig = db.query.bind(db);
     db.query = (async (text: string, params?: unknown[]) => { if (/INSERT INTO users/.test(text)) throw Object.assign(new Error('duplicate key value violates unique constraint'), { code: '23505' }); return orig(text, params); }) as typeof db.query;
     const config = testConfig(); const now = () => new Date();
-    const services = createServices({ repos: { ...createPgRepos(db), ...createPgCoreRepos(db), ...createPgProgressRepos(db) }, config, now });
+    const services = createServices({ repos: { ...createPgRepos(db), ...createPgCoreRepos(db), ...createPgProgressRepos(db), ...createPgMentorshipRepos(db), ...createPgPaymentRepos(db) }, config, now });
     const ctx = makeCtx({ services, config, now }, db);
     const r = await createHandler(routes, ctx)(req({ method: 'POST', path: '/api/auth/register', body: { name: 'T U', email: 'dup@x.com', password: 'Passw0rdOK1' } }));
     assert.equal(r.status, 409);

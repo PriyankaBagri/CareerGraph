@@ -25,15 +25,15 @@ export const _setInsideViteForTests = (v: boolean | null): void => { viteOverrid
 
 // ONLY features listed as true have a real backend endpoint. Everything else keeps using local data even when VITE_API_URL is set,
 // so pointing the app at the API never routes a not-yet-migrated feature to an endpoint that does not exist.
-export type BackendFeature = 'auth' | 'profile' | 'progress' | 'settings' | 'careers' | 'assessments' | 'evidence' | 'analysis' | 'assistant';
+export type BackendFeature = 'auth' | 'profile' | 'progress' | 'settings' | 'careers' | 'assessments' | 'evidence' | 'analysis' | 'assistant' | 'mentorship';
 // Stage 5: careers, skill assessments, evidence and readiness/gaps/actions use the backend whenever VITE_API_URL is set. Profile details, target career,
 // onboarding state, custom careers, action progress and settings are stored on the server for the signed-in user too. Only legacy browser data stays local until the user imports it.
-const BACKEND_FEATURES: Record<BackendFeature, boolean> = { auth: true, profile: true, progress: true, settings: true, careers: true, assessments: true, evidence: true, analysis: true, assistant: true };
+const BACKEND_FEATURES: Record<BackendFeature, boolean> = { auth: true, profile: true, progress: true, settings: true, careers: true, assessments: true, evidence: true, analysis: true, assistant: true, mentorship: true };
 
 // 70 s: a sleeping free-tier API can need about a minute to wake. Model calls (assistant, career draft) keep their longer limit.
 export const REQUEST_TIMEOUT_MS = 70_000, ASSISTANT_TIMEOUT_MS = 130_000;
 export const SLOW_NOTICE_MS = 5_000, RETRY_DELAY_MS = 1_500; // show a notice after 5 s; wait 1.5 s before the single retry of a GET
-export const requestTimeoutMs = (path: string): number => (path.startsWith('/assistant/chat') || path === '/careers/draft' ? ASSISTANT_TIMEOUT_MS : REQUEST_TIMEOUT_MS); // model calls get the longer limit
+export const requestTimeoutMs = (path: string): number => (path.startsWith('/assistant/chat') || path.startsWith('/assistant/plan') || path === '/careers/draft' ? ASSISTANT_TIMEOUT_MS : REQUEST_TIMEOUT_MS); // model calls get the longer limit
 export const TOKEN_KEY = 'careergraph:token';
 export class ApiError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string, public readonly fields?: Record<string, string>) { super(message); }

@@ -19,15 +19,14 @@ export default function Dashboard() {
     <div className="animate-rise space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow">Career intelligence</p>
+          <p className="eyebrow">Your dashboard</p>
           <h1 className="text-3xl font-semibold leading-tight">{me ? `Welcome back, ${me.user.name.split(' ')[0]}` : 'Welcome back'}</h1>
           <p className="text-mute">{me && view ? `Profile ${profileProgress(me.profile, view.skills, view.evidence.length).percent}% complete` : ' '}</p>
         </div>
         <div className="rounded-xl border border-line bg-panel px-4 py-3">
           <p className="eyebrow">Your target career</p>
           <p className="text-lg font-semibold">{view?.career.name ?? '…'}</p>
-          {view && <p className="max-w-xs text-xs text-mute">{view.career.description}</p>}
-          <Link to="/profile" className="text-sm text-ember underline">Change</Link>
+                    <Link to="/profile" className="text-sm text-ember underline">Change</Link>
         </div>
       </header>
       {error && <div className="card-dark" role="alert"><p className="font-semibold">We couldn't load your CareerGraph right now.</p><button className="btn mt-3" onClick={retry}>Try again</button></div>}
@@ -40,11 +39,11 @@ export default function Dashboard() {
           </div>
           <PlainSummary view={view} actions={actions} compact />
           <GapList gaps={view.gaps} actions={actions} unassessed={view.skills.filter((s) => s.status === 'not_assessed').length} />
-          <Disclosure title="How each skill adds to the score" hint="the numbers behind the percentage"><ReadinessBreakdown readiness={view.readiness} skills={view.skills} /></Disclosure>
-          <Disclosure title="Career action graph" hint="a visual map of the same skills, evidence and actions">
+          <Disclosure title="How each skill adds to the score" hint="how the score is worked out"><ReadinessBreakdown readiness={view.readiness} skills={view.skills} /></Disclosure>
+          <Disclosure title="Career action graph" hint="a map of your skills">
             <CareerGraph key={view.career.id} career={view.career} evidence={view.evidence} overall={view.readiness.overall} readinessText={readinessLabel(view.readiness)} skills={view.skills} actions={actions} guidance={view.guidance} rules={view.readiness.backend?.evaluation?.rules} refreshing={refreshing} />
           </Disclosure>
-          <p className="text-sm text-mute">Want an explanation of any of this? <Link to="/assistant" className="text-ember underline">Ask the career assistant</Link>.</p>
+          <p className="text-sm text-mute">Need help? <Link to="/assistant" className="text-ember underline">Ask the assistant</Link> or <Link to="/mentors" className="text-ember underline">find a mentor for {view.career.name}</Link>.</p>
         </>
       )}
     </div>

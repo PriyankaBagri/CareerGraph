@@ -1,32 +1,40 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Compass, FileCheck2, GitCompare, LayoutDashboard, MessageSquare, LogOut, Menu, Network, Route, Settings, User as UserIcon, X } from 'lucide-react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Compass, FileCheck2, LayoutDashboard, MessageSquare, LogOut, Menu, Network, Route, Settings, User as UserIcon, Users, X } from 'lucide-react';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../context/AuthContext';
 import DevDataSource from './DevDataSource';
 import { useSettings } from '../../hooks/useSettings';
 import { useOnline } from '../../hooks/useOnline';
 
-const NAV = [
-  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard }, { to: '/career', label: 'Career Explorer', Icon: Compass },
-  { to: '/skills', label: 'Skills', Icon: Network }, { to: '/evidence', label: 'Evidence', Icon: FileCheck2 },
-  { to: '/roadmap', label: 'Roadmap', Icon: Route }, { to: '/compare', label: 'Compare Careers', Icon: GitCompare }, { to: '/assistant', label: 'Assistant', Icon: MessageSquare },
-  { to: '/profile', label: 'Profile', Icon: UserIcon }, { to: '/settings', label: 'Settings', Icon: Settings },
+// One short list, grouped. Compare is reached from the Explorer's career cards and Bookings from Mentorship; both keep their routes.
+type NavItem = { to: string; label: string; Icon: typeof Compass; also?: string[] };
+const NAV: { group: string; items: NavItem[] }[] = [
+  { group: '', items: [{ to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard }] },
+  { group: 'My career', items: [{ to: '/career', label: 'Explore Careers', Icon: Compass }, { to: '/skills', label: 'Skills', Icon: Network }, { to: '/evidence', label: 'Evidence', Icon: FileCheck2 }, { to: '/roadmap', label: 'Roadmap', Icon: Route }] },
+  { group: 'Get help', items: [{ to: '/assistant', label: 'Assistant', Icon: MessageSquare }, { to: '/mentors', label: 'Mentorship', Icon: Users, also: ['/bookings'] }] },
+  { group: 'Account', items: [{ to: '/profile', label: 'Profile', Icon: UserIcon }, { to: '/settings', label: 'Settings', Icon: Settings }] },
 ];
 
 function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   const me = useProfile();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { logout: signOut } = useAuth();
   const logout = async () => { await signOut(); navigate('/login', { replace: true }); };
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 py-6 text-lg font-semibold tracking-tight">Career<span className="text-ember">Graph</span></div>
       <nav aria-label="Main" className="flex-1 space-y-1 px-3">
-        {NAV.map(({ to, label, Icon }) => (
-          <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${isActive ? 'bg-ember/15 text-ember' : 'text-mute hover:bg-white/5 hover:text-white'}`}>
-            <Icon size={18} aria-hidden />{label}
-          </NavLink>
+        {NAV.map(({ group, items }) => (
+          <div key={group || 'top'} className="space-y-1 pb-2">
+            {group && <p className="px-3 pt-2 text-xs uppercase tracking-wide text-mute">{group}</p>}
+            {items.map(({ to, label, Icon, also }) => (
+              <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => { const on = isActive || !!also?.some((p) => pathname.startsWith(p)); return `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${on ? 'bg-ember/15 text-ember' : 'text-mute hover:bg-white/5 hover:text-white'}`; }}>
+                <Icon size={18} aria-hidden />{label}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
       <div className="m-3 flex items-center gap-3 rounded-xl border border-line p-3">
